@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import WebViewBridge from 'react-native-webview-bridge';
 import {InjectedMessageHandler} from './WebviewMessageHandler';
 import {actions, messages} from './const';
-import {Modal, View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, PixelRatio, Keyboard, Dimensions} from 'react-native';
+import {Modal, View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, PixelRatio, Keyboard, Dimensions, Linking, Alert} from 'react-native';
 
 const injectScript = `
   (function () {
@@ -161,7 +161,28 @@ export default class RichTextEditor extends Component {
         case messages.LINK_TOUCHED:
           this.prepareInsert();
           const {title, url} = message.data;
-          this.showLinkDialog(title, url);
+          const isIncludeHttps = url.includes('https://')
+          let updateUrl
+          if(isIncludeHttps) {
+            updateUrl = url
+          } else {
+            updateUrl = `http://${url}`
+          }
+          // this.showLinkDialog(title, url);
+
+          // console.log('link touched', url, updateUrl)
+
+          if(updateUrl) {
+            Linking.canOpenURL(updateUrl).then(supported => {
+              if(!supported) {
+                Alert.alert('Invalid URL')
+              } else {
+                return Linking.openURL(updateUrl)
+              }
+            }).catch ((e) => "Error when open link")
+          } else {
+            this.showLinkDialog(title, url)
+          }
           break;
         case messages.LOG:
           console.log('FROM ZSS', message.data);
